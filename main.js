@@ -9,11 +9,11 @@ import fs from 'fs'
 const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 const index = pc.Index("rag-implementation")
 
-let dataBuffer = fs.readFileSync("./story.pdf");
+// let dataBuffer = fs.readFileSync("./story.pdf");
 
-const parser = new PDFParse({
-    data: dataBuffer
-})
+// const parser = new PDFParse({
+//     data: dataBuffer
+// })
 
 // Creating embedding with LLM
 const embeddings = new MistralAIEmbeddings({
@@ -22,12 +22,42 @@ const embeddings = new MistralAIEmbeddings({
 })
 
 // Parsing the pdf
-const data = await parser.getText()
+// const data = await parser.getText()
 
-// Splitting text into 100 char length chunks
-const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 100, chunkOverlap: 0 })
-const chunks = await splitter.splitText(data.text)
+// Splitting text into 500 char length chunks
+// const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 0 })
+// const chunks = await splitter.splitText(data.text)
 
-const docs = await embeddings.embedDocuments(chunks)
+// const docs = await Promise.all(chunks.map(async (chunk) => {
+//     const embedding = await embeddings.embedQuery(chunk)
+//     return {
+//         text: chunk,
+//         embedding
+//     }
+// }))
 
-// Code is not complete yet but setup is completed
+// Updating + Inserting in the index 
+// const result = await index.upsert({
+//     records: docs.map((doc, i) => ({
+//         id: `doc-${i}`,
+//         values: doc.embedding,
+//         metadata: {
+//             text: doc.text
+//         }
+//     }))
+// })
+
+// Querying to DB by imbedding our questions
+
+const queryEmbedding = await embeddings.embedQuery("how was the internship experience?");
+
+console.log(queryEmbedding)
+
+const result = await index.query({
+    vector: queryEmbedding,
+    topK: 2,
+    includeMetadata: true
+})
+
+
+console.log(JSON.stringify(result))
